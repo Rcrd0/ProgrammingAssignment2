@@ -2,68 +2,80 @@
 ## Week 2 programming assignment
 ## Using R scoping rules to preserve state inside an R object
 
+
+## ---------------- code used to test of the functionality
+#
+#   Test data and results without caching
+#
+#       mtx <- matrix(rnorm(9, 5, 2), nrow=3, ncol=3)
+#       mtx2 <- matrix(rnorm(16, 5, 2), nrow=4, ncol=4)
+#       solve(mtx)
+#       solve(mtx2)
+#
+#
+#   Build the object my_mtx and call the function twice to check that the 2nd time the message is shown
+#
+#       my_mtx <- makeCacheMatrix(mtx)
+#       cacheSolve(my_mtx)
+#       cacheSolve(my_mtx)
+#
+#   With the same object my_mtx, store a new matrix (4 x 4 this time), and invoke cachedSolve twice
+#
+#       my_mtx$set(mtx2)
+#       cacheSolve(my_mtx)
+#       cacheSolve(my_mtx)
+
+
 ## makeCacheMatrix returns a list with four function definitios
-##    set the value of the matrix y into makeCacheMatrix::x
-##    get the value of the matrix makeCacheMatrix::x
-##    set the value of the inverse makeCacheMatrix::s
-##    get the value of the inverse mkaeCacheMatrix::s
-
-
+##    set(y):           preserves the value of the matrix y into makeCacheMatrix::x
+##    get():            retrieves the value of the matrix preserved in makeCacheMatrix::x
+##    setinverse(slv):  preserves the value of the inverse(x) into makeCacheMatrix::cachedSolve
+##    getinverse():     retrieves the value of the inverse preserved in mkaeCacheMatrix::cachedSolve
+##
 makeCacheMatrix <- function(x = matrix()) {
-    # when the matrix is created, the cachedSolve varialble is null
-    cachedSolve <- NULL
+    
+    cachedSolve <- NULL      # when makeCacheMatrix is invoked, cachedSolve varialble is set to NULL (cache is empty)
     
     # sets the value of the matrix
     set <- function(y) {
         x <<- y              # the value of makeCacheMatrix::x is replaced by a nue matrix
-        cachedSolve <<- NULL # the previous computation of the inverse is not valid anymore with the new matrix
+        cachedSolve <<- NULL # with the new matrix, the previous computation of the inverse is not valid anymore
     }
     
-    # gets the value of the array
-    get <- function() x # returns makeCacheMatrix::x (contains the matrix)
+    get <- function() x      # returns makeCacheMatrix::x (the matrix)
     
-    setinverse <- function(slv) cachedSolve <<- slv # recieves the inversed matix and stores into cachedSolve
-    getinverse <- function() cachedSolve            # returns the value of cachedSolve
+    setinverse <- function(slv) cachedSolve <<- slv # preserves the inverse of the matrix (slv)
+    getinverse <- function() cachedSolve            # retrieves the cached inverse (cachedSolve)
         
-    list (set = set,  # f(y) -> makeCacheMatrix::x <- y
-          get = get,  # f() -> makeCachMatrix::x
-          setinverse = setinverse, # f(slv) -> makeCacheMatrix::cachedSolve <- slv
-          getinverse = getinverse) # f() -> cachedSolve
+    list (set = set,  
+          get = get,  
+          setinverse = setinverse, 
+          getinverse = getinverse) 
 }
 
 
 
 
-## Returns the inverse of a matrix x; after the first computation, the result is chaced and returned in subsquent calls
-
+## Returns the inverse of a matrix x
+##    The first time the function is executed, the inverse of x is calculated and the result is preserved
+##    Subsequent calls to cacheSolve don't performe the computation, but just retrieve the cached inverse
+##
 cacheSolve <- function(x, ...) {
     
-    ## Return a matrix that is the inverse of 'x'
-    s <- x$getinverse() # value of the inverse(x) stored in makeCachedMatrix::cachedSolve (null the first time)
-    if (is.null(s)) {   # the first call, the inverse has not been calculated and the function returns NULL
-        data <- x$get()    # value of the matrix x stored in makeCacheMatrix::x 
-        inv <- solve(data, ...) # calculate the inverse(x) 
-        x$setinverse(inv)    # store the inverse into makeCacheMatrix::cachedSolve for subsequent calls
-        inv # this line is not needed, just added for clarity
+    s <- x$getinverse()     # retrieves makeCachedMatrix::cachedSolve, which is NULL the first invocation
+    if (is.null(s)) {       # the first call s is NULL because the inverse has not been calculated yet
+        data <- x$get()             # First we need to get the matrix x preserved in makeCacheMatrix::x 
+        inv <- solve(data, ...)     # Then we calculate the inverse of x
+        x$setinverse(inv)           # Fnally the inverse is preserved into makeCacheMatrix::cachedSolve for subsequent calls
+        inv                         # this line is not needed, but added for clarity
     }
-    else # not the first time, the inverse(x) is already computed and stored into s
+    else                    # getinverse didn't return TRUE means the inverse was already computed and preserved
     {
         message("getting cached data")
-        s # returns the matrix stored in makeCachedMatrix::cachedSolve
+        s                       # returns the inverse preserved in makeCachedMatrix::cachedSolve
     }
-    
 }
 
 
 
-## test data
-# mtx <- matrix(rnorm(9, 5, 2), nrow=3, ncol=3)
-# mtx2 <- matrix(rnorm(16, 5, 2), nrow=4, ncol=4)
-# solve(mtx)
-# solve(mtx2)
-# my_mtx <- makeCacheMatrix(mtx)
-# cacheSolve(my_mtx)
-# cacheSolve(my_mtx)
-# my_mtx$set(mtx2)
-# cacheSolve(my_mtx)
-# cacheSolve(my_mtx)
+
